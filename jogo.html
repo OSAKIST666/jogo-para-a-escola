@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Dinâmico</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #1e90ff, #87cefa);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+            transition: background-color 1s;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #222;
+        }
+
+        .question {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        .answers {
+            margin-bottom: 20px;
+        }
+
+        .answers button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #1e90ff;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .answers button:hover {
+            background: #333;
+            transform: scale(1.05);
+        }
+
+        .feedback {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .counters {
+            display: flex;
+            justify-content: center;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .counters div {
+            margin-right: 20px;
+        }
+
+        .stars {
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .popup.visible {
+            display: block;
+        }
+
+        .popup button {
+            margin-top: 20px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #1e90ff;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .popup button:hover {
+            background: #333;
+        }
+
+        .final-results {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #1e90ff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #1e90ff;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quiz Dinâmico</h1>
+        <div class="counters">
+            <div id="correctCount">Acertos: 0</div>
+            <div id="incorrectCount">Erros: 0</div>
+            <div id="stars" class="stars"></div>
+        </div>
+        <div id="question" class="question">Qual é uma característica do Transtorno do Déficit de Atenção e Hiperatividade (TDAH)?</div>
+        <div id="feedback" class="feedback"></div>
+        <div id="answers" class="answers">
+            <!-- As opções serão adicionadas dinamicamente pelo JavaScript -->
+        </div>
+    </div>
+
+    <!-- Pop-up para troféus e resultados -->
+    <div id="popup" class="popup">
+        <div id="popupMessage"></div>
+        <button onclick="closePopup()">Fechar</button>
+    </div>
+
+    <!-- Resultados finais -->
+    <div id="finalResults" class="final-results"></div>
+
+    <script>
+        const questions = [
+            { question: "Qual é uma característica do Transtorno do Déficit de Atenção e Hiperatividade (TDAH)?", correctAnswer: 'B', options: {
+                'A': 'Dificuldade com a leitura',
+                'B': 'Desatenção persistente',
+                'C': 'Comportamentos repetitivos',
+                'D': 'Dificuldade com cálculos matemáticos'
+            }},
+            { question: "O que o Transtorno do Espectro Autista (TEA) afeta?", correctAnswer: 'C', options: {
+                'A': 'Apenas a habilidade de leitura',
+                'B': 'O processamento sensorial',
+                'C': 'A comunicação social e interesses restritos',
+                'D': 'O desenvolvimento físico'
+            }},
+            { question: "Qual condição é caracterizada por dificuldades na leitura?", correctAnswer: 'C', options: {
+                'A': 'Discalculia',
+                'B': 'Síndrome de Tourette',
+                'C': 'Dislexia',
+                'D': 'TDAH'
+            }},
+            { question: "O que é uma característica da Discalculia?", correctAnswer: 'C', options: {
+                'A': 'Dificuldade com a escrita',
+                'B': 'Comportamentos impulsivos',
+                'C': 'Dificuldade com cálculos matemáticos',
+                'D': 'Dificuldade na comunicação social'
+            }},
+            { question: "Qual é um sintoma do Transtorno do Processamento Sensorial (TPS)?", correctAnswer: 'C', options: {
+                'A': 'Desatenção persistente',
+                'B': 'Tiques motores e vocais',
+                'C': 'Hipersensibilidade ou hipossensibilidade a estímulos',
+                'D': 'Dificuldade com a leitura'
+            }},
+            { question: "Como o Transtorno do Déficit de Atenção Sem Hiperatividade (TDA) se diferencia do TDAH?", correctAnswer: 'C', options: {
+                'A': 'Não inclui desatenção',
+                'B': 'Inclui hiperatividade',
+                'C': 'Não inclui hiperatividade',
+                'D': 'Inclui dificuldades com cálculos matemáticos'
+            }},
+            { question: "Qual é uma característica dos tiques na Síndrome de Tourette?", correctAnswer: 'C', options: {
+                'A': 'Comportamentos repetitivos',
+                'B': 'Dificuldade com cálculos matemáticos',
+                'C': 'Tiques motores e vocais repetitivos',
+                'D': 'Dificuldade na comunicação social'
+            }},
+            { question: "Qual condição exige abordagens educacionais personalizadas?", correctAnswer: 'A', options: {
+                'A': 'Dislexia',
+                'B': 'Discalculia',
+                'C': 'TPS',
+                'D': 'TEA'
+            }},
+            { question: "O que pode impactar o desempenho acadêmico e atividades diárias envolvendo matemática?", correctAnswer: 'C', options: {
+                'A': 'Dislexia',
+                'B': 'TPS',
+                'C': 'Discalculia',
+                'D': 'Síndrome de Tourette'
+            }},
+            { question: "Qual condição está associada à dificuldade em manter a concentração e seguir instruções?", correctAnswer: 'D', options: {
+                'A': 'Síndrome de Tourette',
+                'B': 'TEA',
+                'C': 'Dislexia',
+                'D': 'TDAH'
+            }},
+            { question: "Qual transtorno pode levar a desafios em manter a concentração e completar tarefas?", correctAnswer: 'C', options: {
+                'A': 'Dislexia',
+                'B': 'TPS',
+                'C': 'TDA',
+                'D': 'Síndrome de Tourette'
+            }},
+            { question: "Qual é uma característica do Transtorno do Processamento Sensorial (TPS)?", correctAnswer: 'C', options: {
+                'A': 'Desatenção persistente',
+                'B': 'Tiques vocais',
+                'C': 'Hipersensibilidade ou hipossensibilidade a estímulos',
+                'D': 'Impulsividade'
+            }},
+            { question: "Qual é um sintoma comum de TEA?", correctAnswer: 'C', options: {
+                'A': 'Tiques vocais',
+                'B': 'Dificuldade com leitura',
+                'C': 'Interesses restritos',
+                'D': 'Impulsividade'
+            }}
+        ];
+
+        let currentQuestionIndex = 0;
+        let correctCount = 0;
+        let incorrectCount = 0;
+        const questionsPerPart = Math.ceil(questions.length / 5); // Divida as perguntas em 5 partes
+
+        function displayQuestion() {
+            const questionElement = document.getElementById('question');
+            const answersElement = document.getElementById('answers');
+            const feedbackElement = document.getElementById('feedback');
+
+            const question = questions[currentQuestionIndex];
+            questionElement.innerText = question.question;
+
+            answersElement.innerHTML = '';
+            feedbackElement.innerText = '';
+
+            for (const [key, value] of Object.entries(question.options)) {
+                const button = document.createElement('button');
+                button.innerText = value;
+                button.onclick = () => checkAnswer(key);
+                answersElement.appendChild(button);
+            }
+        }
+
+        function checkAnswer(selectedOption) {
+            const question = questions[currentQuestionIndex];
+            const correctAnswer = question.correctAnswer;
+
+            if (selectedOption === correctAnswer) {
+                correctCount++;
+                document.getElementById('feedback').innerText = 'Resposta correta!';
+            } else {
+                incorrectCount++;
+                document.getElementById('feedback').innerText = 'Resposta incorreta.';
+            }
+
+            document.getElementById('correctCount').innerText = 'Acertos: ' + correctCount;
+            document.getElementById('incorrectCount').innerText = 'Erros: ' + incorrectCount;
+
+            currentQuestionIndex++;
+            if (currentQuestionIndex % questionsPerPart === 0) {
+                showStarPopup();
+            } else if (currentQuestionIndex < questions.length) {
+                displayQuestion();
+            } else {
+                showFinalResults();
+            }
+        }
+
+        function showStarPopup() {
+            const popupMessage = document.getElementById('popupMessage');
+            popupMessage.innerHTML = `
+                <h2>Parabéns!</h2>
+                <p>Você ganhou uma estrela!</p>
+                <p>Acertos: ${correctCount}</p>
+            `;
+            document.getElementById('popup').classList.add('visible');
+        }
+
+        function closePopup() {
+            document.getElementById('popup').classList.remove('visible');
+            displayQuestion();
+        }
+
+        function showFinalResults() {
+            const finalResults = document.getElementById('finalResults');
+            finalResults.innerHTML = `
+                <h2>Resultados Finais</h2>
+                <p>Acertos: ${correctCount}</p>
+                <p>Erros: ${incorrectCount}</p>
+                <div class="stars">${'⭐'.repeat(Math.floor(questions.length / questionsPerPart))}</div>
+            `;
+            finalResults.style.display = 'block';
+        }
+
+        // Inicialização
+        displayQuestion();
+    </script>
+</body>
+</html>
